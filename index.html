@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Drone Delivery Dashboard - Enhanced UI</title>
+  
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  
+  <style>
+    /* Gradient background */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1d3557, #457b9d);
+      color: #f1faee;
+      height: 100vh;
+      overflow: hidden;
+    }
+    header {
+      background: rgba(29, 53, 87, 0.9);
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      user-select: none;
+    }
+    main {
+      display: flex;
+      height: calc(100vh - 70px);
+      box-shadow: 0 0 30px rgba(0,0,0,0.5);
+      border-radius: 0 0 15px 15px;
+      overflow: hidden;
+      margin: 0 10px 10px;
+    }
+    #sidebar {
+      width: 320px;
+      background: rgba(255 255 255 / 0.1);
+      border-right: 1.5px solid rgba(255 255 255 / 0.2);
+      padding: 1.5rem;
+      overflow-y: auto;
+      backdrop-filter: blur(15px);
+      box-shadow: inset 0 0 15px rgba(255 255 255 / 0.1);
+      border-radius: 0 10px 10px 0;
+    }
+    #sidebar h2 {
+      margin-top: 0;
+      font-weight: 800;
+      font-size: 1.75rem;
+      letter-spacing: 0.04em;
+      margin-bottom: 1rem;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .delivery-item {
+      background: rgba(255 255 255 / 0.15);
+      margin-bottom: 12px;
+      padding: 12px 16px;
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: 0 1px 10px rgba(0,0,0,0.15);
+      border: 1.5px solid transparent;
+      transition: all 0.3s ease-in-out;
+      font-size: 1.1rem;
+      user-select: none;
+      position: relative;
+      color: #edf2f4;
+    }
+    .delivery-item:hover,
+    .delivery-item.active {
+      background: #a8dadc;
+      color: #1d3557;
+      box-shadow: 0 5px 22px rgba(0,0,0,0.4);
+      border-color: #457b9d;
+      font-weight: 700;
+      z-index: 10;
+    }
+    .priority-high {
+      color: #e63946;
+      font-weight: 900;
+      text-shadow: 0 0 8px #e63946aa;
+      border-left: 4px solid #e63946;
+    }
+    .priority-medium {
+      border-left: 4px solid #fbbf24;
+    }
+    .priority-low {
+      border-left: 4px solid #10b981;
+    }
+    .status {
+      font-size: 0.9rem;
+      margin-top: 5px;
+      font-style: italic;
+      color: #a8dadc;
+      text-shadow: 0 0 4px rgba(0,0,0,0.3);
+    }
+    button {
+      background-color: #1d3557;
+      color: #a8dadc;
+      border: 2px solid #a8dadc;
+      padding: 0.6rem 1.3rem;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      margin-top: 18px;
+      width: 100%;
+      transition: all 0.3s ease-in-out;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+      user-select: none;
+    }
+    button:hover {
+      background-color: #a8dadc;
+      color: #1d3557;
+      border-color: #457b9d;
+      box-shadow: 0 5px 25px #a8dadcaa;
+    }
+
+    #map {
+      flex-grow: 1;
+      height: 100%;
+      border-radius: 0 10px 10px 0;
+      box-shadow: inset 0 0 35px rgba(0,0,0,0.6);
+    }
+
+    /* Popup styling for modern UI */
+    .leaflet-popup-content-wrapper {
+      background: rgba(29, 53, 87, 0.95);
+      border-radius: 10px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+      color: #f1faee;
+      font-weight: 600;
+      font-size: 1.1rem;
+      line-height: 1.4;
+      user-select: none;
+    }
+    .leaflet-popup-tip {
+      background: rgba(29,53,87,0.95);
+    }
+    .popup-btn {
+      margin-top: 12px;
+      background: #f1faee;
+      color: #1d3557;
+      padding: 8px 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+      transition: background 0.3s ease;
+      user-select: none;
+    }
+    .popup-btn:hover {
+      background: #457b9d;
+      color: #f1faee;
+    }
+
+    /* Animated SVG drone icon */
+    .drone-icon {
+      animation: float 4s ease-in-out infinite;
+      filter: drop-shadow(0 6px 3px rgba(0,0,0,0.25));
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }sta
+  </style>
+</head>
+<body>
+
+<header>【ＲｅｓＱＦｌｙｅｒｓ】</header>
+
+<main>
+  <aside id="sidebar">
+    <h2>Delivery Management</h2>
+    
+    <!-- Filter and Sort Controls -->
+    <div style="margin-bottom: 15px;">
+      <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+        <select id="priorityFilter" onchange="filterDeliveries()" style="flex: 1; padding: 6px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: #f1faee;">
+          <option value="all">All Priorities</option>
+          <option value="high">High Priority</option>
+          <option value="medium">Medium Priority</option>
+          <option value="low">Low Priority</option>
+        </select>
+        <select id="statusFilter" onchange="filterDeliveries()" style="flex: 1; padding: 6px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: #f1faee;">
+          <option value="all">All Status</option>
+          <option value="En route">En Route</option>
+          <option value="Waiting">Waiting</option>
+          <option value="Delivered">Delivered</option>
+          <option value="Maintenance">Maintenance</option>
+        </select>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <select id="sortBy" onchange="sortDeliveries()" style="flex: 1; padding: 6px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: #f1faee;">
+          <option value="priority">Sort by Priority</option>
+          <option value="eta">Sort by ETA</option>
+          <option value="battery">Sort by Battery</option>
+          <option value="name">Sort by Name</option>
+        </select>
+        <button onclick="reprioritize()" style="padding: 6px 12px; font-size: 0.9rem;">Reprioritize</button>
+      </div>
+    </div>
+
+    <!-- Delivery List -->
+    <div id="deliveryList">
+      <!-- Delivery items will be dynamically generated here -->
+    </div>
+
+    <!-- Alerts Panel -->
+    <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px;">
+      <h3 style="margin: 0 0 10px 0; font-size: 1.2rem; color: #a8dadc;">Alerts & Notifications</h3>
+      <div id="alertsPanel" style="max-height: 200px; overflow-y: auto; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px;">
+        <!-- Alerts will be dynamically generated here -->
+      </div>
+    </div>
+  </aside>
+
+  <section id="map"></section>
+</main>
+
+<!-- Leaflet JS -->
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
+
+<script>
+  // Initialize the map in the #map div and set its center + zoom - Dindigul Region
+  const map = L.map('map').setView([10.35, 77.95], 12);
+
+  // Add OpenStreetMap tiles
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+  }).addTo(map);
+
+  // Custom "drone" SVG icon for markers with animations
+  const droneSVG = `
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width="40" height="40" 
+      viewBox="0 0 64 64" 
+      fill="none" 
+      stroke="#1d3557" 
+      stroke-width="3" 
+      class="drone-icon"
+    >
+      <circle cx="32" cy="32" r="10" fill="#a8dadc"/>
+      <path d="M12 32h10" stroke-width="5" stroke-linecap="round"/>
+      <path d="M42 32h10" stroke-width="5" stroke-linecap="round"/>
+      <path d="M32 12v10" stroke-width="5" stroke-linecap="round"/>
+      <path d="M32 42v10" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="32" cy="32" r="4" fill="#1d3557"/>
+    </svg>
+  `;
+
+  // Define custom Leaflet icon using SVG
+  const droneIcon = L.divIcon({
+    className: "",
+    html: droneSVG,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+  });
+
+  // Enhanced delivery dataset with detailed information - Dindigul Region
+  const deliveries = [
+    { 
+      id: 0, 
+      name: "Urgent Medical Supply", 
+      coords: [10.3456, 77.9515], 
+      status: "En route", 
+      priority: "high",
+      payload: "Emergency Medical Kit + Insulin",
+      eta: "12 minutes",
+      battery: 87,
+      destination: "Dindigul Government Hospital",
+      itemType: "Medical",
+      droneId: "DR-001"
+    },
+    { 
+      id: 1, 
+      name: "Communication Kit", 
+      coords: [10.3892, 77.8901], 
+      status: "Waiting", 
+      priority: "medium",
+      payload: "Satellite Phone + Radio Equipment",
+      eta: "25 minutes",
+      battery: 92,
+      destination: "Dindigul Emergency Control Center",
+      itemType: "Communication",
+      droneId: "DR-002"
+    },
+    { 
+      id: 2, 
+      name: "Food and Water", 
+      coords: [10.3123, 77.9876], 
+      status: "Delivered", 
+      priority: "low",
+      payload: "Water Bottles + Energy Bars",
+      eta: "0 minutes",
+      battery: 45,
+      destination: "Dindigul Relief Camp",
+      itemType: "Supplies",
+      droneId: "DR-003"
+    },
+    { 
+      id: 3, 
+      name: "Emergency Shelter Kit", 
+      coords: [10.2789, 77.9234], 
+      status: "En route", 
+      priority: "high",
+      payload: "Tent + Blankets + First Aid",
+      eta: "8 minutes",
+      battery: 78,
+      destination: "Dindigul Flood Relief Zone",
+      itemType: "Shelter",
+      droneId: "DR-004"
+    },
+    { 
+      id: 4, 
+      name: "Power Generator", 
+      coords: [10.4012, 77.8456], 
+      status: "Maintenance", 
+      priority: "medium",
+      payload: "Portable Solar Generator",
+      eta: "45 minutes",
+      battery: 23,
+      destination: "Dindigul Emergency Station",
+      itemType: "Power",
+      droneId: "DR-005"
+    }
+  ];
+
+  // Marker references array
+  const markers = [];
+
+  // Add markers to map with enhanced popups
+  deliveries.forEach(delivery => {
+    const batteryColor = delivery.battery > 50 ? '#4ade80' : delivery.battery > 20 ? '#fbbf24' : '#ef4444';
+    const priorityColor = delivery.priority === 'high' ? '#ef4444' : delivery.priority === 'medium' ? '#fbbf24' : '#10b981';
+    
+    const popupContent = `
+      <div style="min-width: 280px; font-family: 'Segoe UI', sans-serif;">
+        <div style="display: flex; align-items: center; margin-bottom: 12px;">
+          <div style="width: 12px; height: 12px; background: ${priorityColor}; border-radius: 50%; margin-right: 8px;"></div>
+          <strong style="font-size: 1.1rem; color: #1d3557;">${delivery.name}</strong>
+        </div>
+        
+        <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin-bottom: 12px;">
+          <div style="margin-bottom: 6px;"><strong>Drone ID:</strong> ${delivery.droneId}</div>
+          <div style="margin-bottom: 6px;"><strong>Payload:</strong> ${delivery.payload}</div>
+          <div style="margin-bottom: 6px;"><strong>Destination:</strong> ${delivery.destination}</div>
+          <div style="margin-bottom: 6px;"><strong>Item Type:</strong> ${delivery.itemType}</div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+          <div style="text-align: center; background: rgba(255,255,255,0.1); padding: 8px; border-radius: 6px;">
+            <div style="font-size: 0.9rem; color: #a8dadc;">ETA</div>
+            <div style="font-weight: bold; color: #1d3557;">${delivery.eta}</div>
+          </div>
+          <div style="text-align: center; background: rgba(255,255,255,0.1); padding: 8px; border-radius: 6px;">
+            <div style="font-size: 0.9rem; color: #a8dadc;">Battery</div>
+            <div style="font-weight: bold; color: ${batteryColor};">${delivery.battery}%</div>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 12px;">
+          <strong>Status:</strong> <span style="color: ${delivery.status === 'Delivered' ? '#10b981' : delivery.status === 'En route' ? '#3b82f6' : '#fbbf24'}; font-weight: bold;">${delivery.status}</span>
+        </div>
+        
+        ${delivery.status !== 'Delivered' ? `
+          <button class="popup-btn" onclick="confirmDelivery(${delivery.id})" style="width: 100%;">
+            Confirm Delivery
+          </button>
+        ` : `
+          <div style="text-align: center; color: #10b981; font-weight: bold; padding: 8px; background: rgba(16, 185, 129, 0.1); border-radius: 6px;">
+            ✓ Delivery Completed
+          </div>
+        `}
+      </div>
+    `;
+
+    const marker = L.marker(delivery.coords, { icon: droneIcon })
+      .addTo(map)
+      .bindPopup(popupContent);
+
+    markers.push(marker);
+  });
+
+  // Handle sidebar item click to zoom + open popup
+  function selectDelivery(id) {
+    document.querySelectorAll('.delivery-item').forEach(item => item.classList.remove('active'));
+    document.getElementById('delivery-' + id).classList.add('active');
+
+    const d = deliveries.find(x => x.id === id);
+    if (d) {
+      map.flyTo(d.coords, 13, { duration: 1.5 });
+      markers[id].openPopup();
+    }
+  }
+
+  // Confirm delivery button functionality
+  function confirmDelivery(id) {
+    const delivery = deliveries.find(d => d.id === id);
+    if (delivery && delivery.status !== 'Delivered') {
+      delivery.status = 'Delivered';
+      delivery.eta = '0 minutes';
+      
+      // Add success alert
+      addAlert('success', `${delivery.droneId}: Delivery confirmed - ${delivery.name}`, 'low');
+      
+      // Update UI
+      renderDeliveryList();
+      markers[id].closePopup();
+      
+      // Show confirmation
+      setTimeout(() => {
+        alert(`✅ Delivery confirmed: ${delivery.name}\nDrone ${delivery.droneId} has completed the mission.`);
+      }, 100);
+    }
+  }
+
+  // Enhanced reprioritize function
+  function reprioritize() {
+    // Simulate reprioritization
+    deliveries.forEach(delivery => {
+      if (delivery.status === 'En route' && Math.random() < 0.3) {
+        const priorities = ['high', 'medium', 'low'];
+        const newPriority = priorities[Math.floor(Math.random() * priorities.length)];
+        if (newPriority !== delivery.priority) {
+          delivery.priority = newPriority;
+          addAlert('info', `${delivery.droneId}: Priority changed to ${newPriority}`, 'low');
+        }
+      }
+    });
+    
+    renderDeliveryList();
+    addAlert('info', 'Delivery priorities have been updated based on current conditions', 'low');
+  }
+
+  // Alerts system
+  const alerts = [
+    { id: 1, type: 'warning', message: 'DR-005: Low battery (23%) - Return to base recommended', time: '2 min ago', severity: 'high' },
+    { id: 2, type: 'info', message: 'DR-001: Route optimized - ETA reduced by 3 minutes', time: '5 min ago', severity: 'low' },
+    { id: 3, type: 'success', message: 'DR-003: Delivery completed successfully', time: '12 min ago', severity: 'low' },
+    { id: 4, type: 'warning', message: 'Weather alert: Strong winds detected in Mumbai area', time: '15 min ago', severity: 'medium' },
+    { id: 5, type: 'error', message: 'DR-004: Obstacle detected - Route adjustment required', time: '18 min ago', severity: 'high' }
+  ];
+
+  // Filter and sort state
+  let currentFilter = { priority: 'all', status: 'all' };
+  let currentSort = 'priority';
+
+  // Initialize the dashboard
+  function initializeDashboard() {
+    renderDeliveryList();
+    renderAlerts();
+    selectDelivery(0);
+  }
+
+  // Render delivery list with filtering and sorting
+  function renderDeliveryList() {
+    const deliveryList = document.getElementById('deliveryList');
+    let filteredDeliveries = [...deliveries];
+
+    // Apply filters
+    if (currentFilter.priority !== 'all') {
+      filteredDeliveries = filteredDeliveries.filter(d => d.priority === currentFilter.priority);
+    }
+    if (currentFilter.status !== 'all') {
+      filteredDeliveries = filteredDeliveries.filter(d => d.status === currentFilter.status);
+    }
+
+    // Apply sorting
+    filteredDeliveries.sort((a, b) => {
+      switch (currentSort) {
+        case 'priority':
+          const priorityOrder = { high: 3, medium: 2, low: 1 };
+          return priorityOrder[b.priority] - priorityOrder[a.priority];
+        case 'eta':
+          return parseInt(a.eta) - parseInt(b.eta);
+        case 'battery':
+          return b.battery - a.battery;
+        case 'name':
+          return a.name.localeCompare(b.name);
+        default:
+          return 0;
+      }
+    });
+
+    // Generate HTML
+    deliveryList.innerHTML = filteredDeliveries.map(delivery => {
+      const priorityClass = `priority-${delivery.priority}`;
+      const statusColor = delivery.status === 'Delivered' ? '#10b981' : 
+                         delivery.status === 'En route' ? '#3b82f6' : 
+                         delivery.status === 'Maintenance' ? '#ef4444' : '#fbbf24';
+      const batteryColor = delivery.battery > 50 ? '#4ade80' : delivery.battery > 20 ? '#fbbf24' : '#ef4444';
+      
+      return `
+        <div class="delivery-item ${priorityClass}" onclick="selectDelivery(${delivery.id})" id="delivery-${delivery.id}">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+            <div style="display: flex; align-items: center;">
+              <div style="width: 8px; height: 8px; background: ${delivery.priority === 'high' ? '#ef4444' : delivery.priority === 'medium' ? '#fbbf24' : '#10b981'}; border-radius: 50%; margin-right: 8px;"></div>
+              <strong>${delivery.name}</strong>
+            </div>
+            <div style="font-size: 0.8rem; color: ${batteryColor};">${delivery.battery}%</div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 3px;">
+            <span>${delivery.droneId}</span>
+            <span style="color: #a8dadc;">${delivery.eta}</span>
+          </div>
+          <div class="status" id="status-${delivery.id}" style="color: ${statusColor};">
+            Status: ${delivery.status}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Filter deliveries
+  function filterDeliveries() {
+    currentFilter.priority = document.getElementById('priorityFilter').value;
+    currentFilter.status = document.getElementById('statusFilter').value;
+    renderDeliveryList();
+  }
+
+  // Sort deliveries
+  function sortDeliveries() {
+    currentSort = document.getElementById('sortBy').value;
+    renderDeliveryList();
+  }
+
+  // Render alerts
+  function renderAlerts() {
+    const alertsPanel = document.getElementById('alertsPanel');
+    alertsPanel.innerHTML = alerts.map(alert => {
+      const icon = alert.type === 'error' ? '🚨' : 
+                  alert.type === 'warning' ? '⚠️' : 
+                  alert.type === 'success' ? '✅' : 'ℹ️';
+      const severityColor = alert.severity === 'high' ? '#ef4444' : 
+                           alert.severity === 'medium' ? '#fbbf24' : '#10b981';
+      
+      return `
+        <div style="display: flex; align-items: flex-start; margin-bottom: 10px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 6px; border-left: 3px solid ${severityColor};">
+          <span style="margin-right: 8px; font-size: 1.1rem;">${icon}</span>
+          <div style="flex: 1;">
+            <div style="font-size: 0.9rem; color: #f1faee; margin-bottom: 2px;">${alert.message}</div>
+            <div style="font-size: 0.8rem; color: #a8dadc;">${alert.time}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Add new alert
+  function addAlert(type, message, severity = 'low') {
+    const newAlert = {
+      id: Date.now(),
+      type,
+      message,
+      time: 'Just now',
+      severity
+    };
+    alerts.unshift(newAlert);
+    if (alerts.length > 10) alerts.pop(); // Keep only last 10 alerts
+    renderAlerts();
+  }
+
+  // Initialize the dashboard
+  initializeDashboard();
+
+  // ...existing code...
+
+// --- Real-time simulation: Move drones every 2 seconds ---
+function randomOffset() {
+  // Small random offset for latitude/longitude
+  return (Math.random() - 0.5) * 0.02;
+}
+
+function updateDronePositions() {
+  deliveries.forEach((delivery, i) => {
+    // Only move if not delivered and not in maintenance
+    if (delivery.status !== "Delivered" && delivery.status !== "Maintenance") {
+      // Simulate new coordinates
+      delivery.coords[0] += randomOffset();
+      delivery.coords[1] += randomOffset();
+      
+      // Simulate battery drain
+      if (Math.random() < 0.1) { // 10% chance of battery drain
+        delivery.battery = Math.max(0, delivery.battery - 1);
+        
+        // Add low battery alert
+        if (delivery.battery <= 20 && delivery.battery > 15) {
+          addAlert('warning', `${delivery.droneId}: Low battery (${delivery.battery}%) - Consider return to base`, 'high');
+        }
+      }
+      
+      // Simulate ETA updates
+      if (Math.random() < 0.15) { // 15% chance of ETA change
+        const currentEta = parseInt(delivery.eta);
+        if (currentEta > 0) {
+          delivery.eta = Math.max(0, currentEta + (Math.random() < 0.5 ? -1 : 1)) + " minutes";
+        }
+      }
+      
+      // Update marker position
+      markers[i].setLatLng(delivery.coords);
+      
+      // Update popup content if open
+      if (markers[i].isPopupOpen()) {
+        updatePopupContent(delivery, i);
+      }
+    }
+  });
+  
+  // Update the delivery list display
+  renderDeliveryList();
+}
+
+// Update popup content with current data
+function updatePopupContent(delivery, index) {
+  const batteryColor = delivery.battery > 50 ? '#4ade80' : delivery.battery > 20 ? '#fbbf24' : '#ef4444';
+  const priorityColor = delivery.priority === 'high' ? '#ef4444' : delivery.priority === 'medium' ? '#fbbf24' : '#10b981';
+  
+  const popupContent = `
+    <div style="min-width: 280px; font-family: 'Segoe UI', sans-serif;">
+      <div style="display: flex; align-items: center; margin-bottom: 12px;">
+        <div style="width: 12px; height: 12px; background: ${priorityColor}; border-radius: 50%; margin-right: 8px;"></div>
+        <strong style="font-size: 1.1rem; color: #1d3557;">${delivery.name}</strong>
+      </div>
+      
+      <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin-bottom: 12px;">
+        <div style="margin-bottom: 6px;"><strong>Drone ID:</strong> ${delivery.droneId}</div>
+        <div style="margin-bottom: 6px;"><strong>Payload:</strong> ${delivery.payload}</div>
+        <div style="margin-bottom: 6px;"><strong>Destination:</strong> ${delivery.destination}</div>
+        <div style="margin-bottom: 6px;"><strong>Item Type:</strong> ${delivery.itemType}</div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+        <div style="text-align: center; background: rgba(255,255,255,0.1); padding: 8px; border-radius: 6px;">
+          <div style="font-size: 0.9rem; color: #a8dadc;">ETA</div>
+          <div style="font-weight: bold; color: #1d3557;">${delivery.eta}</div>
+        </div>
+        <div style="text-align: center; background: rgba(255,255,255,0.1); padding: 8px; border-radius: 6px;">
+          <div style="font-size: 0.9rem; color: #a8dadc;">Battery</div>
+          <div style="font-weight: bold; color: ${batteryColor};">${delivery.battery}%</div>
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 12px;">
+        <strong>Status:</strong> <span style="color: ${delivery.status === 'Delivered' ? '#10b981' : delivery.status === 'En route' ? '#3b82f6' : '#fbbf24'}; font-weight: bold;">${delivery.status}</span>
+      </div>
+      
+      ${delivery.status !== 'Delivered' ? `
+        <button class="popup-btn" onclick="confirmDelivery(${delivery.id})" style="width: 100%;">
+          Confirm Delivery
+        </button>
+      ` : `
+        <div style="text-align: center; color: #10b981; font-weight: bold; padding: 8px; background: rgba(16, 185, 129, 0.1); border-radius: 6px;">
+          ✓ Delivery Completed
+        </div>
+      `}
+    </div>
+  `;
+  
+  markers[index].setPopupContent(popupContent);
+}
+
+// Start simulation interval
+setInterval(updateDronePositions, 2000);
+
+// ...existing code...
+
+</script>
+
+</body>
+</html>
